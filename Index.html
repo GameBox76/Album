@@ -1,0 +1,1053 @@
+
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Visual Memories Gallery</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fdf4ff',
+                            100: '#fae8ff',
+                            500: '#d946ef',
+                            600: '#c026d3',
+                            700: '#a21caf',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        serif: ['Playfair Display', 'serif'],
+                    },
+                    animation: {
+                        'fade-in': 'fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                        'scale-up': 'scaleUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                        'float': 'float 6s ease-in-out infinite',
+                        'shimmer': 'shimmer 1.8s infinite linear',
+                    },
+                    keyframes: {
+                        fadeIn: {
+                            '0%': { opacity: '0', transform: 'translateY(8px)' },
+                            '100%': { opacity: '1', transform: 'translateY(0)' },
+                        },
+                        scaleUp: {
+                            '0%': { opacity: '0', transform: 'scale(0.92)' },
+                            '100%': { opacity: '1', transform: 'scale(1)' },
+                        },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-6px)' },
+                        },
+                        shimmer: {
+                            '0%': { backgroundPosition: '-200% 0' },
+                            '100%': { backgroundPosition: '200% 0' }
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(192, 38, 211, 0.35);
+            border-radius: 999px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(192, 38, 211, 0.7);
+        }
+
+        /* Glassmorphism Styles */
+        .glass-dark {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        
+        .light .glass-dark {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            color: #0f172a;
+        }
+
+        /* Android Safe Padding for Modern Notch/Gesture Bars */
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom, 16px);
+        }
+
+        /* 3D Coverflow Stage & Cards */
+        .coverflow-stage {
+            perspective: 1200px;
+            perspective-origin: 50% 50%;
+        }
+        .coverflow-card {
+            transition: transform 0.45s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.45s ease, filter 0.45s ease, box-shadow 0.45s ease;
+            transform-style: preserve-3d;
+            will-change: transform, opacity;
+        }
+
+        /* Particle Background Canvas */
+        #particles-canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Shimmer Loading Placeholder */
+        .skeleton-loader {
+            background: linear-gradient(90deg, rgba(255,255,255,0.03) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.03) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        /* Soft Pulse for slideshow play status */
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(217, 70, 239, 0.4); }
+            50% { box-shadow: 0 0 28px rgba(217, 70, 239, 0.8); }
+        }
+        .pulse-glow {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
+
+        /* Lightbox Image Pan Touch Cursor */
+        .touch-grab {
+            cursor: grab;
+        }
+        .touch-grab:active {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col relative overflow-x-hidden selection:bg-fuchsia-500 selection:text-white">
+
+    <!-- Ambient Canvas Background -->
+    <canvas id="particles-canvas"></canvas>
+
+    <!-- App Header -->
+    <header class="sticky top-0 z-40 w-full glass-dark border-b border-slate-800/80 transition-colors">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between gap-3">
+            <!-- Brand Logo -->
+            <div class="flex items-center gap-2.5 sm:gap-3 cursor-pointer" onclick="resetFilters()">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-fuchsia-600 via-pink-500 to-amber-400 flex items-center justify-center text-white shadow-lg shadow-fuchsia-500/25 transition transform active:scale-95">
+                    <i class="fa-solid fa-photo-film text-base sm:text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-serif text-lg sm:text-2xl font-bold bg-gradient-to-r from-fuchsia-400 via-pink-300 to-amber-200 bg-clip-text text-transparent leading-tight">
+                        Visual Memories
+                    </h1>
+                    <p class="text-[10px] sm:text-xs text-slate-400 hidden xs:block">27 Curated Moments</p>
+                </div>
+            </div>
+
+            <!-- View Switchers -->
+            <div class="flex items-center bg-slate-900/90 p-1 rounded-xl border border-slate-800/80 shadow-inner">
+                <button id="view-grid-btn" onclick="switchView('grid')" title="Grid View" class="view-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-fuchsia-600 text-white shadow-md">
+                    <i class="fa-solid fa-grip-vertical"></i>
+                    <span class="hidden sm:inline">Grid</span>
+                </button>
+                <button id="view-coverflow-btn" onclick="switchView('coverflow')" title="3D Flow View" class="view-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-cubes"></i>
+                    <span class="hidden sm:inline">3D Flow</span>
+                </button>
+                <button id="view-flipbook-btn" onclick="switchView('flipbook')" title="Storybook View" class="view-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5">
+                    <i class="fa-solid fa-book-open"></i>
+                    <span class="hidden sm:inline">Book</span>
+                </button>
+            </div>
+
+            <!-- Action Tools -->
+            <div class="flex items-center gap-2">
+                <!-- Theme Toggle -->
+                <button id="theme-toggle" onclick="toggleTheme()" class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-fuchsia-400 hover:border-fuchsia-500/50 flex items-center justify-center transition active:scale-95" title="Toggle Light/Dark Theme">
+                    <i class="fa-solid fa-moon text-xs sm:text-sm"></i>
+                </button>
+                <!-- Slideshow Launch -->
+                <button onclick="openSlideshow()" class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl bg-gradient-to-r from-fuchsia-600 to-pink-600 hover:from-fuchsia-500 hover:to-pink-500 text-white text-xs font-semibold shadow-lg shadow-fuchsia-600/20 transition transform active:scale-95">
+                    <i class="fa-solid fa-play text-[10px]"></i>
+                    <span class="hidden xs:inline">Slideshow</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 z-10 flex flex-col gap-6 sm:gap-8 pb-20 sm:pb-8">
+        
+        <!-- Controls Bar: Search, Category Filter & Favorite Toggle -->
+        <div class="flex flex-col md:flex-row items-center justify-between gap-3.5 p-3.5 sm:p-4 rounded-2xl glass-dark border border-slate-800/80 shadow-xl">
+            <!-- Search Bar -->
+            <div class="relative w-full md:w-72">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs sm:text-sm"></i>
+                <input type="text" id="search-input" placeholder="Search memory title..." oninput="handleSearch()" class="w-full pl-9 sm:pl-10 pr-8 py-2 bg-slate-900/90 border border-slate-800 rounded-xl text-xs sm:text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:border-fuchsia-500 transition">
+                <button id="search-clear-btn" onclick="clearSearch()" class="hidden absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Category Filter Tabs (Scrollable on Android/Mobile) -->
+            <div class="flex items-center gap-1.5 sm:gap-2 overflow-x-auto w-full md:w-auto pb-1 md:pb-0 scrollbar-none">
+                <button onclick="setFilter('all')" class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-semibold border transition active-chip bg-fuchsia-600 border-fuchsia-500 text-white shrink-0">
+                    All (<span id="count-all">27</span>)
+                </button>
+                <button onclick="setFilter('favorites')" class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-semibold border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-pink-500/50 transition shrink-0">
+                    <i class="fa-solid fa-heart text-pink-500 mr-1"></i> Favs (<span id="count-favs">0</span>)
+                </button>
+                <button onclick="setFilter('portraits')" class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-semibold border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-fuchsia-500/50 transition shrink-0">
+                    Portraits
+                </button>
+                <button onclick="setFilter('highlights')" class="filter-chip px-3.5 py-1.5 rounded-full text-xs font-semibold border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-fuchsia-500/50 transition shrink-0">
+                    Highlights
+                </button>
+            </div>
+
+            <!-- Stats Info -->
+            <div class="text-xs text-slate-400 font-medium whitespace-nowrap hidden lg:block">
+                Showing <span id="visible-count" class="text-fuchsia-400 font-bold">27</span> photos
+            </div>
+        </div>
+
+        <!-- VIEW 1: MASONRY GRID -->
+        <section id="view-grid" class="view-section w-full">
+            <div id="grid-container" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-6">
+                <!-- Dynamic Image Cards Injection -->
+            </div>
+            <!-- Empty state -->
+            <div id="empty-state" class="hidden flex-col items-center justify-center py-16 text-center animate-fade-in">
+                <div class="w-14 h-14 rounded-full bg-slate-900/90 flex items-center justify-center text-slate-500 text-2xl mb-3 border border-slate-800 shadow-lg">
+                    <i class="fa-solid fa-image"></i>
+                </div>
+                <h3 class="text-base font-bold text-slate-200">No memories matched</h3>
+                <p class="text-xs text-slate-400 mt-1 max-w-xs">Try searching for another keyword or change your filter category.</p>
+                <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-xs font-semibold transition active:scale-95 shadow-md">
+                    Reset All Filters
+                </button>
+            </div>
+        </section>
+
+        <!-- VIEW 2: 3D COVERFLOW -->
+        <section id="view-coverflow" class="view-section hidden w-full py-4 sm:py-8">
+            <div id="coverflow-touch-area" class="coverflow-stage relative w-full h-[400px] sm:h-[500px] flex items-center justify-center overflow-hidden touch-pan-x">
+                <!-- Left/Right Nav Buttons -->
+                <button onclick="prevCoverflow()" class="absolute left-2 sm:left-6 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full glass-dark text-white flex items-center justify-center border border-slate-700/80 hover:bg-fuchsia-600 active:scale-90 transition shadow-2xl">
+                    <i class="fa-solid fa-chevron-left text-sm sm:text-base"></i>
+                </button>
+                <button onclick="nextCoverflow()" class="absolute right-2 sm:right-6 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full glass-dark text-white flex items-center justify-center border border-slate-700/80 hover:bg-fuchsia-600 active:scale-90 transition shadow-2xl">
+                    <i class="fa-solid fa-chevron-right text-sm sm:text-base"></i>
+                </button>
+
+                <!-- Cards Wrapper -->
+                <div id="coverflow-wrapper" class="relative w-full h-full flex items-center justify-center">
+                    <!-- Dynamic coverflow cards -->
+                </div>
+            </div>
+
+            <!-- Coverflow Details Bar -->
+            <div class="text-center mt-4 sm:mt-6 animate-fade-in">
+                <p id="coverflow-counter" class="text-[11px] uppercase tracking-widest text-fuchsia-400 font-bold mb-1">Photo 1 of 27</p>
+                <h2 id="coverflow-title" class="font-serif text-xl sm:text-2xl font-bold text-white truncate max-w-xs sm:max-w-md mx-auto">Memory Title</h2>
+                <div class="flex items-center justify-center gap-3 mt-3">
+                    <button id="coverflow-fav-btn" onclick="toggleFavoriteFromCoverflow()" class="w-10 h-10 rounded-full bg-slate-900 border border-slate-800 text-slate-400 hover:text-pink-500 transition active:scale-90 flex items-center justify-center shadow">
+                        <i class="fa-solid fa-heart text-sm"></i>
+                    </button>
+                    <button onclick="openLightbox(currentCoverflowIndex)" class="px-5 py-2.5 rounded-full bg-slate-900/90 border border-slate-700 hover:border-fuchsia-500 text-white text-xs font-semibold flex items-center gap-2 transition active:scale-95 shadow">
+                        <i class="fa-solid fa-expand text-xs"></i> Fullscreen View
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: 3D FLIPBOOK -->
+        <section id="view-flipbook" class="view-section hidden w-full py-4 flex flex-col items-center">
+            <div id="flipbook-touch-area" class="relative w-full max-w-3xl min-h-[380px] sm:min-h-[480px] my-2 flex justify-center items-center">
+                <div id="flipbook-wrapper" class="relative w-full h-full flex justify-center items-center">
+                    <!-- Dynamic Flipbook Spread -->
+                </div>
+            </div>
+
+            <!-- Flipbook Controls -->
+            <div class="flex items-center justify-center gap-4 sm:gap-6 mt-4">
+                <button onclick="prevFlipPage()" class="px-4 sm:px-5 py-2 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-fuchsia-500 text-white text-xs font-semibold flex items-center gap-2 transition active:scale-95 shadow">
+                    <i class="fa-solid fa-arrow-left"></i> Prev
+                </button>
+                <span id="flipbook-page-num" class="text-xs font-semibold text-slate-300 bg-slate-900/90 px-3.5 py-2 rounded-xl border border-slate-800">
+                    Page 1 / 27
+                </span>
+                <button onclick="nextFlipPage()" class="px-4 sm:px-5 py-2 rounded-xl bg-slate-900/90 border border-slate-800 hover:border-fuchsia-500 text-white text-xs font-semibold flex items-center gap-2 transition active:scale-95 shadow">
+                    Next <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="w-full glass-dark border-t border-slate-800/80 py-4 mt-auto z-10 pb-safe">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <p class="text-xs text-slate-400">
+                Crafted with <i class="fa-solid fa-heart text-pink-500 mx-1"></i> Visual Memories &bull; Mobile & Android Optimized
+            </p>
+        </div>
+    </footer>
+
+    <!-- LIGHTBOX / FULLSCREEN MODAL -->
+    <div id="lightbox-modal" class="fixed inset-0 z-50 bg-slate-950/95 backdrop-blur-2xl hidden flex flex-col justify-between transition-opacity duration-300 opacity-0 touch-none">
+        
+        <!-- Lightbox Header Controls -->
+        <div class="w-full px-4 sm:px-6 py-3 flex items-center justify-between z-20 bg-gradient-to-b from-slate-950/90 to-transparent">
+            <div class="truncate max-w-[60%] sm:max-w-md">
+                <span id="lightbox-counter" class="text-[10px] text-fuchsia-400 font-bold uppercase tracking-wider block">Photo 1 of 27</span>
+                <h3 id="lightbox-caption" class="text-white text-sm sm:text-base font-medium font-serif truncate">Memory Caption</h3>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <!-- Favorite button -->
+                <button id="lightbox-fav-btn" onclick="toggleFavoriteFromLightbox()" class="w-9 h-9 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-pink-500 transition active:scale-90 flex items-center justify-center" title="Toggle Favorite">
+                    <i class="fa-solid fa-heart text-xs sm:text-sm"></i>
+                </button>
+                <!-- Zoom Toggle -->
+                <button id="lightbox-zoom-btn" onclick="toggleZoom()" class="w-9 h-9 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-white transition active:scale-90 flex items-center justify-center" title="Toggle Zoom">
+                    <i class="fa-solid fa-magnifying-glass-plus text-xs sm:text-sm"></i>
+                </button>
+                <!-- Slideshow auto-play toggle -->
+                <button id="lightbox-play-btn" onclick="toggleSlideshowAutoPlay()" class="w-9 h-9 rounded-xl bg-slate-900/90 border border-slate-800 text-slate-300 hover:text-fuchsia-400 transition active:scale-90 flex items-center justify-center" title="Auto Slideshow">
+                    <i class="fa-solid fa-play text-xs sm:text-sm"></i>
+                </button>
+                <!-- Close Lightbox -->
+                <button onclick="closeLightbox()" class="w-9 h-9 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white transition active:scale-90 flex items-center justify-center shadow-lg" title="Close (Esc)">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Lightbox Main Stage (With Pan/Zoom and Android Swipe gestures) -->
+        <div class="relative flex-grow flex items-center justify-center overflow-hidden px-2 sm:px-4 py-2" id="lightbox-stage">
+            <!-- Nav Previous -->
+            <button onclick="prevLightboxImage()" class="absolute left-2 sm:left-6 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/80 border border-slate-800 text-white hover:bg-fuchsia-600 active:scale-90 transition shadow-2xl flex items-center justify-center">
+                <i class="fa-solid fa-chevron-left text-sm sm:text-lg"></i>
+            </button>
+
+            <!-- Image Container -->
+            <div id="lightbox-img-wrapper" class="relative max-w-full max-h-full flex items-center justify-center transition-transform duration-200 touch-grab">
+                <img id="lightbox-img" src="" alt="Full view" class="max-h-[75vh] sm:max-h-[82vh] max-w-[92vw] object-contain rounded-xl shadow-2xl transition-all duration-300">
+            </div>
+
+            <!-- Nav Next -->
+            <button onclick="nextLightboxImage()" class="absolute right-2 sm:right-6 z-30 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900/80 border border-slate-800 text-white hover:bg-fuchsia-600 active:scale-90 transition shadow-2xl flex items-center justify-center">
+                <i class="fa-solid fa-chevron-right text-sm sm:text-lg"></i>
+            </button>
+        </div>
+
+        <!-- Lightbox Bottom Thumbnails Bar -->
+        <div class="w-full px-4 py-2.5 glass-dark border-t border-slate-800/80 z-20 overflow-x-auto scrollbar-none flex items-center justify-center pb-safe">
+            <div id="lightbox-thumbnails" class="flex items-center gap-2 max-w-full overflow-x-auto py-1">
+                <!-- Dynamic thumbnails injected -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Application Logic -->
+    <script>
+        // Photo Dataset containing all 27 provided image URLs
+        const originalImages = [
+            { id: 1, url: 'https://i.ibb.co/HLQ3N2gn/file-000000004624820abc81750200959c07.png', title: 'Serene Moments', category: 'highlights' },
+            { id: 2, url: 'https://i.ibb.co/HfRVw2jg/file-0000000065b0820b8a50c0e747ddc7a8.png', title: 'Captured Essence', category: 'portraits' },
+            { id: 3, url: 'https://i.ibb.co/XfQmycMy/file-00000000b7b0820aa7a917da54ecf092.png', title: 'Charming View', category: 'highlights' },
+            { id: 4, url: 'https://i.ibb.co/dsLyn3NN/file-00000000db00820b8e2e6f37ffca0b5c.png', title: 'Timeless Portrait', category: 'portraits' },
+            { id: 5, url: 'https://i.ibb.co/fd6R1TD7/IMG-20260915-182301-975-1.jpg', title: 'Golden Hour Sparkle', category: 'portraits' },
+            { id: 6, url: 'https://i.ibb.co/Kp9YY8ZP/IMG-20260915-182301-975-2.jpg', title: 'Radiant Smile', category: 'highlights' },
+            { id: 7, url: 'https://i.ibb.co/WNNNZGwd/IMG-20260915-182301-975.jpg', title: 'Warm Gathering', category: 'portraits' },
+            { id: 8, url: 'https://i.ibb.co/RTn14SbW/IMG-20260915-182302-085-3.jpg', title: 'Special Memory', category: 'highlights' },
+            { id: 9, url: 'https://i.ibb.co/jZbsRffV/IMG-20260915-182302-085-4.jpg', title: 'Candid Expression', category: 'portraits' },
+            { id: 10, url: 'https://i.ibb.co/LDBkF7FW/IMG-20260915-182958-372.jpg', title: 'Sunset Elegance', category: 'highlights' },
+            { id: 11, url: 'https://i.ibb.co/Mk5t5csj/IMG-20260915-183008-843.jpg', title: 'Vibrant Mood', category: 'portraits' },
+            { id: 12, url: 'https://i.ibb.co/x8mSR1C1/IMG-20260915-183010-779.jpg', title: 'Unforgettable Day', category: 'highlights' },
+            { id: 13, url: 'https://i.ibb.co/Vcy81KBB/IMG-20260915-183012-513.jpg', title: 'Pure Joy', category: 'portraits' },
+            { id: 14, url: 'https://i.ibb.co/wrKC8rfq/IMG-20260915-183014-874.jpg', title: 'Sweet Reflection', category: 'highlights' },
+            { id: 15, url: 'https://i.ibb.co/XZr7sxLC/IMG-20260915-183021-382.jpg', title: 'Daylight Bliss', category: 'portraits' },
+            { id: 16, url: 'https://i.ibb.co/QjQGknFH/IMG-20260915-183023-802.jpg', title: 'Shadow & Light', category: 'highlights' },
+            { id: 17, url: 'https://i.ibb.co/LdB6GLSq/IMG-20260915-183031-052.jpg', title: 'Graceful Pose', category: 'portraits' },
+            { id: 18, url: 'https://i.ibb.co/Fkh6YmYn/IMG-20260915-183033-197.jpg', title: 'Cozy Atmosphere', category: 'highlights' },
+            { id: 19, url: 'https://i.ibb.co/Fk5rtG42/IMG-20260915-183034-980.jpg', title: 'Joyful Gaze', category: 'portraits' },
+            { id: 20, url: 'https://i.ibb.co/xqbHVTkz/IMG-20260915-183039-661.jpg', title: 'Chic Perspective', category: 'highlights' },
+            { id: 21, url: 'https://i.ibb.co/ZpNmqKyn/IMG-20260915-183052-713.jpg', title: 'Lively Spirit', category: 'portraits' },
+            { id: 22, url: 'https://i.ibb.co/YFS2ZBQQ/IMG-20260915-183106-822.jpg', title: 'Gentle Glow', category: 'highlights' },
+            { id: 23, url: 'https://i.ibb.co/S4S4sH4W/IMG-20260915-183115-209.jpg', title: 'Artistic Frame', category: 'portraits' },
+            { id: 24, url: 'https://i.ibb.co/qY62Rp0S/IMG-20260915-183129-072.jpg', title: 'Memorable Snap', category: 'highlights' },
+            { id: 25, url: 'https://i.ibb.co/wNzjvCzn/IMG-20260915-183144-171.jpg', title: 'Ethereal Moment', category: 'portraits' },
+            { id: 26, url: 'https://i.ibb.co/TppYWXC/IMG-20260915-183148-465.jpg', title: 'Heartfelt Memory', category: 'highlights' },
+            { id: 27, url: 'https://i.ibb.co/rK56pC6d/Picsart-26-09-17-23-59-10-633.jpg', title: 'Edited Celebration', category: 'portraits' }
+        ];
+
+        // Global App State Store
+        let currentFilter = 'all';
+        let searchQuery = '';
+        let favorites = [];
+        try {
+            favorites = JSON.parse(localStorage.getItem('fav_memories_v2') || '[]');
+        } catch (e) {
+            favorites = [];
+        }
+
+        let activeView = 'grid'; // grid, coverflow, flipbook
+        let currentLightboxIndex = 0;
+        let currentCoverflowIndex = 0;
+        let currentFlipPageIndex = 0;
+        let slideshowInterval = null;
+        let isZoomed = false;
+
+        // Fallback Image handling
+        const fallbackImg = 'https://placehold.co/600x800/1e293b/d946ef?text=Memory+Photo';
+
+        // Initialize Application
+        window.addEventListener('DOMContentLoaded', () => {
+            initParticles();
+            renderGrid();
+            updateCounts();
+            setupTheme();
+            setupTouchGestures();
+        });
+
+        // Filter photos based on Category and Search Query
+        function getFilteredPhotos() {
+            return originalImages.filter(item => {
+                const matchesCategory = 
+                    currentFilter === 'all' ? true :
+                    currentFilter === 'favorites' ? favorites.includes(item.id) :
+                    item.category === currentFilter;
+                
+                const matchesSearch = item.title.toLowerCase().includes(searchQuery.trim().toLowerCase());
+                return matchesCategory && matchesSearch;
+            });
+        }
+
+        // Handle Image load error cleanly
+        function handleImageError(img) {
+            img.onerror = null;
+            img.src = fallbackImg;
+            const skeleton = img.previousElementSibling;
+            if (skeleton && skeleton.classList.contains('skeleton-loader')) {
+                skeleton.remove();
+            }
+        }
+
+        function handleImageLoaded(img) {
+            const skeleton = img.previousElementSibling;
+            if (skeleton && skeleton.classList.contains('skeleton-loader')) {
+                skeleton.classList.add('opacity-0');
+                setTimeout(() => skeleton.remove(), 200);
+            }
+            img.classList.remove('opacity-0');
+        }
+
+        // Render Masonry / Adaptive Grid View
+        function renderGrid() {
+            const container = document.getElementById('grid-container');
+            const emptyState = document.getElementById('empty-state');
+            const filtered = getFilteredPhotos();
+
+            document.getElementById('visible-count').innerText = filtered.length;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                emptyState.classList.add('flex');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+            emptyState.classList.remove('flex');
+
+            container.innerHTML = filtered.map((photo, index) => {
+                const isFav = favorites.includes(photo.id);
+                return `
+                    <div class="group relative rounded-2xl overflow-hidden glass-dark border border-slate-800/80 shadow-lg transition-all duration-300 hover:-translate-y-1.5 hover:shadow-2xl hover:shadow-fuchsia-500/15 hover:border-fuchsia-500/40 animate-fade-in" style="animation-delay: ${Math.min(index * 30, 300)}ms;">
+                        <div class="aspect-[4/5] w-full bg-slate-900 relative overflow-hidden">
+                            <!-- Skeleton loader -->
+                            <div class="skeleton-loader absolute inset-0 z-0"></div>
+                            
+                            <img src="${photo.url}" 
+                                 alt="${photo.title}" 
+                                 loading="lazy"
+                                 onload="handleImageLoaded(this)"
+                                 onerror="handleImageError(this)"
+                                 class="w-full h-full object-cover rounded-2xl opacity-0 transition-opacity duration-300 group-hover:scale-105 transition-transform duration-500">
+                            
+                            <!-- Favorite overlay button -->
+                            <button onclick="event.stopPropagation(); toggleFavorite(${photo.id})" 
+                                    class="absolute top-2.5 right-2.5 z-10 w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-slate-950/70 backdrop-blur-md border border-white/10 flex items-center justify-center transition active:scale-90 text-${isFav ? 'pink-500' : 'slate-300'} hover:text-pink-500">
+                                <i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart text-xs sm:text-sm"></i>
+                            </button>
+
+                            <!-- Touch & Hover Overlay -->
+                            <div onclick="openLightboxByPhotoId(${photo.id})" class="absolute inset-0 z-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-3.5 sm:p-4 cursor-pointer">
+                                <span class="text-[9px] font-bold uppercase tracking-widest text-fuchsia-400 mb-0.5">#${photo.id} &bull; ${photo.category}</span>
+                                <h3 class="text-white font-serif font-bold text-sm sm:text-base leading-tight truncate">${photo.title}</h3>
+                                <div class="flex items-center gap-2 mt-2 text-[11px] text-slate-300 font-medium">
+                                    <span class="px-2.5 py-1 rounded-full bg-fuchsia-600/90 text-white backdrop-blur-sm shadow"><i class="fa-solid fa-expand text-[9px] mr-1"></i> Inspect</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Render 3D Coverflow View
+        function renderCoverflow() {
+            const wrapper = document.getElementById('coverflow-wrapper');
+            const filtered = getFilteredPhotos();
+
+            if (filtered.length === 0) {
+                wrapper.innerHTML = `<p class="text-slate-400 text-xs">No photos match your query.</p>`;
+                return;
+            }
+
+            if (currentCoverflowIndex >= filtered.length) {
+                currentCoverflowIndex = 0;
+            }
+
+            wrapper.innerHTML = filtered.map((photo, index) => {
+                const offset = index - currentCoverflowIndex;
+                const absOffset = Math.abs(offset);
+                
+                // Adaptive spacing for mobile screen sizes
+                const isMobile = window.innerWidth < 640;
+                const translateX = offset * (isMobile ? 110 : 180);
+                const translateZ = -absOffset * (isMobile ? 120 : 200);
+                const rotateY = offset * -32;
+                const opacity = absOffset > 3 ? 0 : 1 - absOffset * 0.22;
+                const zIndex = 100 - absOffset;
+
+                return `
+                    <div class="coverflow-card absolute w-52 sm:w-72 h-72 sm:h-96 rounded-2xl overflow-hidden shadow-2xl border border-slate-700/60 cursor-pointer select-none"
+                         style="transform: translateX(${translateX}px) translateZ(${translateZ}px) rotateY(${rotateY}deg); opacity: ${opacity}; z-index: ${zIndex};"
+                         onclick="selectCoverflowItem(${index})">
+                        <img src="${photo.url}" alt="${photo.title}" onerror="handleImageError(this)" class="w-full h-full object-cover pointer-events-none">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent"></div>
+                    </div>
+                `;
+            }).join('');
+
+            // Update Counter & Details
+            const currentPhoto = filtered[currentCoverflowIndex];
+            if (currentPhoto) {
+                document.getElementById('coverflow-counter').innerText = `Photo ${currentCoverflowIndex + 1} of ${filtered.length}`;
+                document.getElementById('coverflow-title').innerText = currentPhoto.title;
+                const favBtn = document.getElementById('coverflow-fav-btn');
+                const isFav = favorites.includes(currentPhoto.id);
+                favBtn.className = `w-10 h-10 rounded-full bg-slate-900 border border-slate-800 transition active:scale-90 flex items-center justify-center ${isFav ? 'text-pink-500 border-pink-500/50' : 'text-slate-400'}`;
+            }
+        }
+
+        function selectCoverflowItem(index) {
+            currentCoverflowIndex = index;
+            renderCoverflow();
+        }
+
+        function prevCoverflow() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+            currentCoverflowIndex = (currentCoverflowIndex - 1 + filtered.length) % filtered.length;
+            renderCoverflow();
+        }
+
+        function nextCoverflow() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+            currentCoverflowIndex = (currentCoverflowIndex + 1) % filtered.length;
+            renderCoverflow();
+        }
+
+        // Render 3D Flipbook / Storybook View
+        function renderFlipbook() {
+            const wrapper = document.getElementById('flipbook-wrapper');
+            const filtered = getFilteredPhotos();
+
+            if (filtered.length === 0) {
+                wrapper.innerHTML = `<p class="text-slate-400 text-xs">No photos available for book view.</p>`;
+                return;
+            }
+
+            if (currentFlipPageIndex >= filtered.length) {
+                currentFlipPageIndex = 0;
+            }
+
+            const photo = filtered[currentFlipPageIndex];
+            const isFav = favorites.includes(photo.id);
+
+            wrapper.innerHTML = `
+                <div class="w-full max-w-2xl bg-slate-900/90 border border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl flex flex-col md:flex-row gap-5 items-center animate-scale-up">
+                    <div class="w-full md:w-1/2 h-56 sm:h-80 rounded-2xl overflow-hidden relative shadow-md bg-slate-950">
+                        <img src="${photo.url}" alt="${photo.title}" onerror="handleImageError(this)" class="w-full h-full object-cover">
+                    </div>
+                    <div class="w-full md:w-1/2 flex flex-col justify-between h-full py-1 text-left">
+                        <div>
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-fuchsia-400">Memory #${photo.id} &bull; ${photo.category}</span>
+                            <h2 class="font-serif text-xl sm:text-2xl font-bold text-white mt-1 leading-snug">${photo.title}</h2>
+                            <p class="text-slate-400 text-xs sm:text-sm mt-2 leading-relaxed">
+                                Beautifully preserved moment captured in high resolution. Tap fullscreen to zoom and explore details.
+                            </p>
+                        </div>
+
+                        <div class="pt-4 mt-4 border-t border-slate-800/80 flex items-center justify-between">
+                            <button onclick="toggleFavorite(${photo.id})" class="flex items-center gap-2 text-xs font-semibold ${isFav ? 'text-pink-500' : 'text-slate-400 hover:text-white'} transition active:scale-95">
+                                <i class="${isFav ? 'fa-solid' : 'fa-regular'} fa-heart text-sm"></i>
+                                <span>${isFav ? 'Favorited' : 'Favorite'}</span>
+                            </button>
+                            <button onclick="openLightboxByPhotoId(${photo.id})" class="px-4 py-2 rounded-xl bg-fuchsia-600 hover:bg-fuchsia-500 text-white text-xs font-semibold shadow transition active:scale-95">
+                                Fullscreen
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('flipbook-page-num').innerText = `Page ${currentFlipPageIndex + 1} / ${filtered.length}`;
+        }
+
+        function prevFlipPage() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+            currentFlipPageIndex = (currentFlipPageIndex - 1 + filtered.length) % filtered.length;
+            renderFlipbook();
+        }
+
+        function nextFlipPage() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+            currentFlipPageIndex = (currentFlipPageIndex + 1) % filtered.length;
+            renderFlipbook();
+        }
+
+        // Lightbox Modal Functions
+        function openLightbox(index) {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+
+            currentLightboxIndex = index;
+            const modal = document.getElementById('lightbox-modal');
+            modal.classList.remove('hidden');
+            setTimeout(() => {
+                modal.classList.remove('opacity-0');
+            }, 10);
+
+            updateLightboxContent();
+            renderLightboxThumbnails();
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openLightboxByPhotoId(photoId) {
+            const filtered = getFilteredPhotos();
+            const index = filtered.findIndex(p => p.id === photoId);
+            if (index !== -1) {
+                openLightbox(index);
+            }
+        }
+
+        function closeLightbox() {
+            const modal = document.getElementById('lightbox-modal');
+            modal.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                document.body.style.overflow = '';
+            }, 300);
+
+            if (slideshowInterval) {
+                toggleSlideshowAutoPlay();
+            }
+        }
+
+        function updateLightboxContent() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+
+            const photo = filtered[currentLightboxIndex];
+            const img = document.getElementById('lightbox-img');
+            
+            img.src = photo.url;
+            img.onerror = function() { this.src = fallbackImg; };
+
+            document.getElementById('lightbox-counter').innerText = `Photo ${currentLightboxIndex + 1} of ${filtered.length}`;
+            document.getElementById('lightbox-caption').innerText = photo.title;
+
+            const favBtn = document.getElementById('lightbox-fav-btn');
+            const isFav = favorites.includes(photo.id);
+            favBtn.className = `w-9 h-9 rounded-xl bg-slate-900/90 border border-slate-800 transition active:scale-90 flex items-center justify-center ${isFav ? 'text-pink-500 border-pink-500/50' : 'text-slate-300'}`;
+
+            resetZoom();
+        }
+
+        function renderLightboxThumbnails() {
+            const container = document.getElementById('lightbox-thumbnails');
+            const filtered = getFilteredPhotos();
+
+            container.innerHTML = filtered.map((photo, i) => `
+                <button onclick="selectLightboxIndex(${i})" class="w-10 h-10 sm:w-12 sm:h-12 rounded-lg overflow-hidden border-2 transition shrink-0 ${i === currentLightboxIndex ? 'border-fuchsia-500 scale-105 shadow-lg ring-2 ring-fuchsia-500/40' : 'border-slate-800 opacity-50 hover:opacity-100'}">
+                    <img src="${photo.url}" onerror="handleImageError(this)" class="w-full h-full object-cover">
+                </button>
+            `).join('');
+
+            // Scroll active thumbnail into view
+            const activeThumb = container.children[currentLightboxIndex];
+            if (activeThumb) {
+                activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+            }
+        }
+
+        function selectLightboxIndex(index) {
+            currentLightboxIndex = index;
+            updateLightboxContent();
+            renderLightboxThumbnails();
+        }
+
+        function prevLightboxImage() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+            currentLightboxIndex = (currentLightboxIndex - 1 + filtered.length) % filtered.length;
+            updateLightboxContent();
+            renderLightboxThumbnails();
+        }
+
+        function nextLightboxImage() {
+            const filtered = getFilteredPhotos();
+            if (filtered.length === 0) return;
+            currentLightboxIndex = (currentLightboxIndex + 1) % filtered.length;
+            updateLightboxContent();
+            renderLightboxThumbnails();
+        }
+
+        // Zoom Controls
+        function toggleZoom() {
+            isZoomed = !isZoomed;
+            const img = document.getElementById('lightbox-img');
+            const zoomBtn = document.getElementById('lightbox-zoom-btn');
+            
+            if (isZoomed) {
+                img.style.transform = 'scale(1.75)';
+                img.style.cursor = 'zoom-out';
+                zoomBtn.classList.add('text-fuchsia-400', 'border-fuchsia-500');
+            } else {
+                resetZoom();
+            }
+        }
+
+        function resetZoom() {
+            isZoomed = false;
+            const img = document.getElementById('lightbox-img');
+            const zoomBtn = document.getElementById('lightbox-zoom-btn');
+            img.style.transform = 'scale(1)';
+            img.style.cursor = 'pointer';
+            zoomBtn.classList.remove('text-fuchsia-400', 'border-fuchsia-500');
+        }
+
+        // Slideshow Auto Play
+        function toggleSlideshowAutoPlay() {
+            const playBtn = document.getElementById('lightbox-play-btn');
+            if (slideshowInterval) {
+                clearInterval(slideshowInterval);
+                slideshowInterval = null;
+                playBtn.classList.remove('pulse-glow', 'text-fuchsia-400', 'border-fuchsia-500');
+                playBtn.classList.add('text-slate-300');
+            } else {
+                slideshowInterval = setInterval(() => {
+                    nextLightboxImage();
+                }, 3000);
+                playBtn.classList.add('pulse-glow', 'text-fuchsia-400', 'border-fuchsia-500');
+            }
+        }
+
+        function openSlideshow() {
+            openLightbox(0);
+            if (!slideshowInterval) {
+                toggleSlideshowAutoPlay();
+            }
+        }
+
+        // Favorites System
+        function toggleFavorite(id) {
+            if (favorites.includes(id)) {
+                favorites = favorites.filter(favId => favId !== id);
+            } else {
+                favorites.push(id);
+            }
+            try {
+                localStorage.setItem('fav_memories_v2', JSON.stringify(favorites));
+            } catch (e) {}
+            
+            updateCounts();
+            refreshCurrentView();
+        }
+
+        function toggleFavoriteFromCoverflow() {
+            const filtered = getFilteredPhotos();
+            const photo = filtered[currentCoverflowIndex];
+            if (photo) {
+                toggleFavorite(photo.id);
+            }
+        }
+
+        function toggleFavoriteFromLightbox() {
+            const filtered = getFilteredPhotos();
+            const photo = filtered[currentLightboxIndex];
+            if (photo) {
+                toggleFavorite(photo.id);
+                updateLightboxContent();
+            }
+        }
+
+        function updateCounts() {
+            document.getElementById('count-all').innerText = originalImages.length;
+            document.getElementById('count-favs').innerText = favorites.length;
+        }
+
+        // View Switching Engine
+        function switchView(viewName) {
+            activeView = viewName;
+            
+            document.querySelectorAll('.view-section').forEach(sec => sec.classList.add('hidden'));
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.className = 'view-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+            });
+            const activeBtn = document.getElementById(`view-${viewName}-btn`);
+            activeBtn.className = 'view-btn px-2.5 sm:px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 bg-fuchsia-600 text-white shadow-md';
+
+            refreshCurrentView();
+        }
+
+        function refreshCurrentView() {
+            if (activeView === 'grid') renderGrid();
+            if (activeView === 'coverflow') renderCoverflow();
+            if (activeView === 'flipbook') renderFlipbook();
+        }
+
+        // Filtering & Search handlers
+        function setFilter(category) {
+            currentFilter = category;
+            
+            document.querySelectorAll('.filter-chip').forEach(chip => {
+                chip.className = 'filter-chip px-3.5 py-1.5 rounded-full text-xs font-semibold border border-slate-800 bg-slate-900/80 text-slate-300 hover:border-fuchsia-500/50 transition shrink-0';
+            });
+            event.currentTarget.className = 'filter-chip px-3.5 py-1.5 rounded-full text-xs font-semibold border transition active-chip bg-fuchsia-600 border-fuchsia-500 text-white shrink-0';
+
+            refreshCurrentView();
+        }
+
+        function handleSearch() {
+            const val = document.getElementById('search-input').value;
+            searchQuery = val;
+            const clearBtn = document.getElementById('search-clear-btn');
+            if (val.trim().length > 0) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+            refreshCurrentView();
+        }
+
+        function clearSearch() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('search-clear-btn').classList.add('hidden');
+            searchQuery = '';
+            refreshCurrentView();
+        }
+
+        function resetFilters() {
+            clearSearch();
+            currentFilter = 'all';
+            refreshCurrentView();
+        }
+
+        // Light / Dark Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const btn = document.getElementById('theme-toggle');
+            if (html.classList.contains('dark')) {
+                html.classList.remove('dark');
+                html.classList.add('light');
+                btn.innerHTML = `<i class="fa-solid fa-sun text-xs sm:text-sm text-amber-400"></i>`;
+            } else {
+                html.classList.remove('light');
+                html.classList.add('dark');
+                btn.innerHTML = `<i class="fa-solid fa-moon text-xs sm:text-sm"></i>`;
+            }
+        }
+
+        function setupTheme() {
+            document.documentElement.classList.add('dark');
+        }
+
+        // Touch Gestures & Swipe Handling for Android & Mobile
+        function setupTouchGestures() {
+            let touchStartX = 0;
+            let touchStartY = 0;
+
+            // Keyboard navigation
+            window.addEventListener('keydown', (e) => {
+                const lightboxHidden = document.getElementById('lightbox-modal').classList.contains('hidden');
+                
+                if (!lightboxHidden) {
+                    if (e.key === 'Escape') closeLightbox();
+                    if (e.key === 'ArrowLeft') prevLightboxImage();
+                    if (e.key === 'ArrowRight') nextLightboxImage();
+                    if (e.key === ' ') { e.preventDefault(); toggleSlideshowAutoPlay(); }
+                } else if (activeView === 'coverflow') {
+                    if (e.key === 'ArrowLeft') prevCoverflow();
+                    if (e.key === 'ArrowRight') nextCoverflow();
+                } else if (activeView === 'flipbook') {
+                    if (e.key === 'ArrowLeft') prevFlipPage();
+                    if (e.key === 'ArrowRight') nextFlipPage();
+                }
+            });
+
+            // Swipe gestures for Lightbox
+            const lightboxStage = document.getElementById('lightbox-stage');
+            lightboxStage.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+                touchStartY = e.changedTouches[0].screenY;
+            }, { passive: true });
+
+            lightboxStage.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const touchEndY = e.changedTouches[0].screenY;
+                const diffX = touchEndX - touchStartX;
+                const diffY = touchEndY - touchStartY;
+
+                // Horizontal swipe (if not heavily vertical)
+                if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+                    if (diffX < 0) nextLightboxImage();
+                    else prevLightboxImage();
+                } 
+                // Swipe down to close lightbox on Android
+                else if (diffY > 80 && Math.abs(diffY) > Math.abs(diffX)) {
+                    closeLightbox();
+                }
+            }, { passive: true });
+
+            // Swipe gestures for Coverflow
+            const coverflowArea = document.getElementById('coverflow-touch-area');
+            coverflowArea.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            coverflowArea.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const diffX = touchEndX - touchStartX;
+                if (Math.abs(diffX) > 35) {
+                    if (diffX < 0) nextCoverflow();
+                    else prevCoverflow();
+                }
+            }, { passive: true });
+
+            // Swipe gestures for Flipbook
+            const flipbookArea = document.getElementById('flipbook-touch-area');
+            flipbookArea.addEventListener('touchstart', (e) => {
+                touchStartX = e.changedTouches[0].screenX;
+            }, { passive: true });
+
+            flipbookArea.addEventListener('touchend', (e) => {
+                const touchEndX = e.changedTouches[0].screenX;
+                const diffX = touchEndX - touchStartX;
+                if (Math.abs(diffX) > 35) {
+                    if (diffX < 0) nextFlipPage();
+                    else prevFlipPage();
+                }
+            }, { passive: true });
+        }
+
+        // Ambient Floating Particle Background
+        function initParticles() {
+            const canvas = document.getElementById('particles-canvas');
+            const ctx = canvas.getContext('2d');
+            let particles = [];
+
+            function resize() {
+                const dpr = window.devicePixelRatio || 1;
+                canvas.width = window.innerWidth * dpr;
+                canvas.height = window.innerHeight * dpr;
+                ctx.scale(dpr, dpr);
+            }
+            resize();
+            window.addEventListener('resize', resize);
+
+            class Particle {
+                constructor() {
+                    this.reset();
+                }
+                reset() {
+                    this.x = Math.random() * window.innerWidth;
+                    this.y = Math.random() * window.innerHeight;
+                    this.size = Math.random() * 2 + 0.5;
+                    this.speedY = -(Math.random() * 0.35 + 0.1);
+                    this.opacity = Math.random() * 0.45 + 0.1;
+                }
+                update() {
+                    this.y += this.speedY;
+                    if (this.y < 0) {
+                        this.y = window.innerHeight;
+                        this.x = Math.random() * window.innerWidth;
+                    }
+                }
+                draw() {
+                    ctx.fillStyle = `rgba(217, 70, 239, ${this.opacity})`;
+                    ctx.beginPath();
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            const count = window.innerWidth < 640 ? 20 : 40;
+            for (let i = 0; i < count; i++) {
+                particles.push(new Particle());
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
+                particles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+    </script>
+</body>
+</html>
